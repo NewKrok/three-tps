@@ -1,0 +1,32 @@
+{
+  "name": "@newkrok/three-tps",
+  "version": "0.0.1",
+  "description": "TPS extension for THREE Game",
+  "main": "src/js/newkrok/three-tps/tps-world.js",
+  "bin": {
+    "three-tps": "src/js/newkrok/three-tps/tps-world.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NewKrok/three-tps.git"
+  },
+  "keywords": [
+    "threejs",
+    "game",
+    "engine",
+    "3d",
+    "tps"
+  ],
+  "author": "Istvan Krisztian Somoracz",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/NewKrok/three-tps/issues"
+  },
+  "homepage": "https://github.com/NewKrok/three-tps#readme",
+  "dependencies": {
+    "three": "0.138.0",
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
