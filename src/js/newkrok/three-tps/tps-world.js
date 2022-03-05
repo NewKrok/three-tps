@@ -19,13 +19,14 @@ export const createTPSWorld = ({
   let _onUpdate;
 
   const camera = createTPSCamera();
+  const onLoaded = worldConfig.onLoaded;
 
   const promise = new Promise((resolve, reject) => {
     try {
       createWorld({
         target,
         assetsConfig,
-        worldConfig,
+        worldConfig: { ...worldConfig, onLoaded: null },
         characterConfig,
         camera: camera.instance,
         characterTickRoutine: (character) => {
@@ -57,11 +58,13 @@ export const createTPSWorld = ({
             callback: ({ x, y }) => camera.updateRotation({ x, y }),
           });
 
-          resolve({
+          const tpsWorld = {
             ...world,
             camera,
             onUpdate: (onUpdate) => (_onUpdate = onUpdate),
-          });
+          };
+          onLoaded && onLoaded(tpsWorld);
+          resolve(tpsWorld);
         })
         .catch((e) => console.log(`Ops! ${e}`));
     } catch (e) {
