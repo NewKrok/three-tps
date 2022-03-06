@@ -1,21 +1,24 @@
-import * as CANNON from "cannon-es";
 import * as THREE from "three";
 
-import { EffectId, effectsConfig } from "../../effects-config.js";
 import {
   UnitAction,
   onUnitAction,
   unitActionState,
 } from "./unit-action-manager.js";
-import {
+
+import { ModelSocketId } from "@newkrok/three-game/src/js/newkrok/three-game/unit/unit-enums.js";
+
+//import { EffectId, effectsConfig } from "../../effects-config.js";
+
+/* import {
   createParticleSystem,
   destroyParticleSystem,
-} from "@newkrok/three-particles/src/js/effects/three-particles";
+} from "@newkrok/three-particles/src/js/effects/three-particles"; */
 
-import { MODULE_ID } from "../../three-game/world.js";
-import { MathUtils } from "three";
-import { ModelSocketId } from "../../three-game/unit/unit-enums.js";
-import { shoot } from "../../three-game/bullet-manager.js";
+/* import { MODULE_ID } from "../../three-game/world.js";
+import { MathUtils } from "three"; */
+
+//import { shoot } from "../../three-game/bullet-manager.js";
 
 //import { AudioId } from "../../assets-config.js";
 
@@ -314,7 +317,7 @@ export const updateUnitController = ({ now, delta }) => {
           : unitActionState.right.value
           ? -1
           : 0;
-        relativeVector = new CANNON.Vec3(
+        relativeVector = new THREE.Vector3(
           Math.sin(noramalizedTargetRotation + rotationOffset) *
             velocity *
             velocityMultiplier *
@@ -327,7 +330,7 @@ export const updateUnitController = ({ now, delta }) => {
         );
       } else {
         _target.isStrafing = false;
-        relativeVector = new CANNON.Vec3(
+        relativeVector = new THREE.Vector3(
           Math.sin(noramalizedTargetRotation) *
             velocity *
             velocityMultiplier *

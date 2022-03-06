@@ -5,9 +5,9 @@ import {
   updateUnitActions,
 } from "./control/unit-action-manager";
 
-import { MODULE_ID } from "../three-game/modules/modules";
+import { MODULE_ID } from "@newkrok/three-game/src/js/newkrok/three-game/modules/modules";
 import { createTPSCamera } from "./tps-camera";
-import { createWorld } from "../three-game/world";
+import { createWorld } from "@newkrok/three-game/src/js/newkrok/three-game/world";
 import { updateUnitController } from "./control/unit-controller";
 
 export const createTPSWorld = ({

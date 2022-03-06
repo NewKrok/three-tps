@@ -1,10 +1,9 @@
 {
   "name": "@newkrok/three-tps",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "TPS extension for THREE Game",
-  "main": "src/js/newkrok/three-tps/tps-world.js",
-  "bin": {
-    "three-tps": "src/js/newkrok/three-tps/tps-world.js"
+  "exports": {
+    "./src/*": "./src/*"
   },
   "repository": {
     "type": "git",
@@ -24,7 +23,7 @@
   },
   "homepage": "https://github.com/NewKrok/three-tps#readme",
   "dependencies": {
-    "three": "0.138.0",
+    "@newkrok/three-game": "0.0.2"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

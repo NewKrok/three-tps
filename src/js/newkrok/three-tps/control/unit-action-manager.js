@@ -3,7 +3,7 @@ import {
   getButtonState,
   initGamepadManager,
   updateGamePad,
-} from "../../three-game/control/gamepad.js";
+} from "@newkrok/three-game/src/js/newkrok/three-game/control/gamepad.js";
 
 const actionHandlers = [];
 
