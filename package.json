@@ -1,6 +1,6 @@
 {
   "name": "@newkrok/three-tps",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "TPS extension for THREE Game",
   "exports": {
     "./src/*": "./src/*"
