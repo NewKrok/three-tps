@@ -1,16 +1,6 @@
 # THREE TPS
 
-TPS extension for THREE Game
-
-# Video
-
-soon...
-
-# Live demo
-
-soon...
+Visit my related demo project to check how does it work. https://github.com/NewKrok/three-tps-demo
 
 # Install
-
-Install with npm
-soon...
+**npm install @newkrok/three-tps --save**
