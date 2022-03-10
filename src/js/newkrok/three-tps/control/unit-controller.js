@@ -233,7 +233,9 @@ export const updateUnitController = ({ now, delta }) => {
       : _target.config.speedInAir;
 
     const velocity =
-      (stamina > 0 && unitActionState.run.pressed ? baseSpeed * 2 : baseSpeed) *
+      (stamina > 0 && unitActionState.run.pressed
+        ? baseSpeed * 2.5
+        : baseSpeed) *
       Math.max(
         unitActionState.forward.value,
         unitActionState.backward.value,
@@ -269,8 +271,7 @@ export const updateUnitController = ({ now, delta }) => {
         }
         diff = targetRotation - newViewRotation;
       }
-      _target.viewRotation += diff * (delta / 0.1);
-      _target.model.rotation.y = Math.PI - _target.viewRotation + Math.PI;
+      _target.setRotation(_target.viewRotation + diff * (delta / 0.1));
 
       /*physics.quaternion.setFromAxisAngle(
         new CANNON.Vec3(0, 1, 0),

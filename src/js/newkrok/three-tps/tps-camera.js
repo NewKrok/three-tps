@@ -81,6 +81,7 @@ export const createTPSCamera = () => {
     update: () => {
       if (target) {
         const targetPos = target.position.clone();
+
         if (targetPos) {
           if (
             Math.abs(positionOffset.distanceTo(positionOffsetTarget)) > 0.01
@@ -89,14 +90,17 @@ export const createTPSCamera = () => {
             normalizePositionOffset();
           }
 
-          targetPos.y += 1;
-          const vector = new THREE.Vector3(0, 0, 1);
-          vector.applyQuaternion(camera.quaternion);
-
           const cameraCollisionStep = 0.1;
-          let distance = cameraCollisionStep;
-          vector.setLength(cameraCollisionStep);
-          const maxDistance = isAimZoomEnabled ? 2 : 3;
+          targetPos.y += 1;
+
+          /**
+           * Check collision between target and requested offset to calculate the max possible offset
+           * */
+          let vector = normalizedPositionOffset
+            .clone()
+            .setLength(cameraCollisionStep);
+          let maxDistance = normalizedPositionOffset.length();
+          let distance = 0;
           cameraSphere.center.copy(targetPos);
           while (
             distance < maxDistance &&
@@ -105,6 +109,25 @@ export const createTPSCamera = () => {
             distance += cameraCollisionStep;
             cameraSphere.center.add(vector);
           }
+          cameraSphere.center.sub(vector);
+
+          /**
+           * Check collision between offset target position and requested camera position
+           * to calculate the max camera distance
+           * */
+          vector = new THREE.Vector3(0, 0, 1);
+          vector.applyQuaternion(camera.quaternion);
+          vector.setLength(cameraCollisionStep);
+          maxDistance = isAimZoomEnabled ? 2 : 3;
+          distance = cameraCollisionStep;
+          while (
+            distance < maxDistance &&
+            !_worldOctree.sphereIntersect(cameraSphere)
+          ) {
+            distance += cameraCollisionStep;
+            cameraSphere.center.add(vector);
+          }
+
           distance -= cameraCollisionStep;
           currentDistance = THREE.Math.lerp(
             currentDistance,
