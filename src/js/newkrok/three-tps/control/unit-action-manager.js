@@ -18,11 +18,18 @@ export const UnitAction = {
   AttackFinish: "AttackFinish",
   Crouch: "Crouch",
   Aim: "Aim",
-  ChooseWeapon1: "ChooseWeapon1",
-  ChooseWeapon2: "ChooseWeapon2",
   RotateCamera: "RotateCamera",
   Interaction: "Interaction",
   Pause: "Pause",
+  CHOOSE_NEXT_TOOL: "CHOOSE_NEXT_TOOL",
+  CHOOSE_PREV_TOOL: "CHOOSE_PREV_TOOL",
+  ...Array.from({ length: 10 }).reduce(
+    (prev, _, index) => ({
+      ...prev,
+      [`CHOOSE_TOOL_${index}`]: `CHOOSE_TOOL_${index}`,
+    }),
+    {}
+  ),
 };
 
 export const unitActionState = {
@@ -36,10 +43,15 @@ export const unitActionState = {
   attackFinish: { pressed: false, value: 0 },
   crouch: { pressed: false, value: 0 },
   aim: { pressed: false, value: 0 },
-  chooseWeapon1: { pressed: false, value: 0 },
-  chooseWeapon2: { pressed: false, value: 0 },
   interaction: { pressed: false, value: 0 },
   pause: { pressed: false, value: 0 },
+  ...Array.from({ length: 10 }).reduce(
+    (prev, _, index) => ({
+      ...prev,
+      [`chooseTool${index}`]: { pressed: false, value: 0 },
+    }),
+    {}
+  ),
 };
 
 const keys = {
@@ -48,8 +60,6 @@ const keys = {
   d: false,
   w: false,
   e: false,
-  1: false,
-  2: false,
   arrowup: false,
   arrowdown: false,
   arrowleft: false,
@@ -58,6 +68,10 @@ const keys = {
   control: false,
   space: false,
   escape: false,
+  ...Array.from({ length: 10 }).reduce(
+    (prev, _, index) => ({ ...prev, [index]: false }),
+    {}
+  ),
 };
 
 const trigger = ({ action, value }) => {
@@ -183,22 +197,15 @@ const updateAimState = () => {
   });
 };
 
-const updateChooseWeapon1State = () => {
-  unitActionState.chooseWeapon1 = calculateState({
-    prevState: unitActionState.chooseWeapon1,
-    keys: [keys[1]],
-    gamepadButton: ButtonKey.ActionLeft,
-    action: UnitAction.ChooseWeapon1,
-  });
-};
-
-const updateChooseWeapon2State = () => {
-  unitActionState.chooseWeapon2 = calculateState({
-    prevState: unitActionState.chooseWeapon2,
-    keys: [keys[2]],
-    gamepadButton: ButtonKey.LeftTrigger,
-    action: UnitAction.ChooseWeapon2,
-  });
+const updateChooseToolState = () => {
+  for (let i = 0; i < 10; i++) {
+    unitActionState[`chooseTool${i}`] = calculateState({
+      prevState: unitActionState[`chooseTool${i}`],
+      keys: [keys[i]],
+      gamepadButton: ButtonKey.ActionLeft,
+      action: UnitAction[`CHOOSE_TOOL_${i}`],
+    });
+  }
 };
 
 const updateCrouchState = () => {
@@ -240,8 +247,7 @@ export const updateUnitActions = () => {
   updateAttackState();
   updateCrouchState();
   updateAimState();
-  updateChooseWeapon1State();
-  updateChooseWeapon2State();
+  updateChooseToolState();
   updateInteractionState();
   updatePauseState();
 
@@ -270,6 +276,13 @@ export const initUnitActions = () => {
   document.body.addEventListener("keyup", (e) => {
     const key = getCharKey(e.key);
     if (keys[key] !== undefined) keys[key] = false;
+  });
+  document.addEventListener("wheel", ({ deltaY }) => {
+    trigger({
+      action:
+        deltaY > 0 ? UnitAction.CHOOSE_NEXT_TOOL : UnitAction.CHOOSE_PREV_TOOL,
+      value: deltaY,
+    });
   });
   document.addEventListener("mousemove", ({ movementX, movementY }) => {
     trigger({

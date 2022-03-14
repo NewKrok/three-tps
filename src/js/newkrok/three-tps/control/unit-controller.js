@@ -6,6 +6,7 @@ import {
   unitActionState,
 } from "./unit-action-manager.js";
 
+import { MODULE_ID } from "@newkrok/three-game/src/js/newkrok/three-game/modules/modules.js";
 import { ModelSocketId } from "@newkrok/three-game/src/js/newkrok/three-game/unit/unit-enums.js";
 
 //import { EffectId, effectsConfig } from "../../effects-config.js";
@@ -17,8 +18,6 @@ import { ModelSocketId } from "@newkrok/three-game/src/js/newkrok/three-game/uni
 
 /* import { MODULE_ID } from "../../three-game/world.js";
 import { MathUtils } from "three"; */
-
-//import { shoot } from "../../three-game/bullet-manager.js";
 
 //import { AudioId } from "../../assets-config.js";
 
@@ -37,21 +36,11 @@ let _world = null;
 let isMovementBlocked = false;
 let selectedWeaponType = WeaponType.Unarmed;
 
-const jumpForceDuringWalk = 10;
-const jumpForceDuringRun = 13;
-
 let stamina = 100;
-const staminaRegenerationRatio = 20;
-const jumpStaminaCost = 5;
-const shootStaminaCost = 1;
-const runStaminaCostRatio = 15;
 
-const jumpTimeout = 200;
 const slashTimeout = 1000;
-const shootTimeout = 100;
-const weaponChangeTimeout = 600;
+const shootTimeout = 200;
 
-let staminaBar = null;
 let crosshairs = null;
 let isShootingActive = false;
 
@@ -67,22 +56,7 @@ export const setUnitControllerTarget = ({ target, world }) => {
   onUnitAction({
     action: UnitAction.Jump,
     callback: () => {
-      if (_target.onGround) {
-        _target.jump();
-        /*_target.isOnGround = false;
-        _target.isJumpTriggered = true;
-        _target.physics.velocity.y =
-          stamina >= jumpStaminaCost
-            ? unitActionState.run.pressed
-              ? jumpForceDuringRun
-              : jumpForceDuringWalk
-            : (stamina / jumpStaminaCost) * jumpForceDuringWalk;
-        stamina = Math.max(0, stamina - jumpStaminaCost);*/
-        /*playAudio({
-            audioId: AudioId.Jump,
-            cacheId: AudioId.Jump,
-          });*/
-      }
+      if (_target.onGround) _target.jump();
     },
   });
 
@@ -191,35 +165,19 @@ export const updateUnitController = ({ now, delta }) => {
   if (_target) {
     const {
       viewRotation,
-      physics,
-      /* isJumpTriggered, */
-      /* jumpStartTime, */
       wasSlashTriggered,
       isSlashTriggered,
       slashStartTime,
       wasShootTriggered,
       isShootTriggered,
       shootStartTime,
-      wasWeaponChangeTriggered,
-      isWeaponChangeTriggered,
-      weaponChangeStartTime,
       useAim,
     } = _target;
 
     const cameraRotation = _world.camera.getRotation().clone();
 
-    const { modules, scene /* , camera */ } = _world;
-    /*const { physicsWorld, colliders } = modules.find(
-      ({ id }) => id === MODULE_ID.PHYSICS
-    );*/
-
     isMovementBlocked = false;
-    //isSlashTriggered || isShootTriggered || isWeaponChangeTriggered;
-    /*
-    _target.isClimbingUp = false;
-    _target.shimmyVelocity = 0;
-    const cameraRotation = _world.camera.getRotation();
-*/
+
     const verticalVelocity =
       Math.max(unitActionState.backward.value, unitActionState.forward.value) *
       (unitActionState.backward.value > unitActionState.forward.value ? -1 : 1);
@@ -377,72 +335,38 @@ export const updateUnitController = ({ now, delta }) => {
       _target.isShootTriggered = false;
     }
 
-    const raycaster = new THREE.Raycaster(
-      _world.camera.instance.getWorldPosition(new THREE.Vector3()),
-      _world.camera.instance.getWorldDirection(new THREE.Vector3()),
-      0,
-      100
-    );
+    _target.aimingPosition = _world
+      .getModule(MODULE_ID.OCTREE)
+      .worldOctree.rayIntersect(
+        new THREE.Ray(
+          _world.camera.instance.getWorldPosition(new THREE.Vector3()),
+          _world.camera.instance.getWorldDirection(new THREE.Vector3())
+        )
+      ).position;
 
-    const projectileStartSocket = _target.getSocket(
-      ModelSocketId.PROJECTILE_START
-    );
-    const bulletStartPosition = projectileStartSocket.getWorldPosition(
-      new THREE.Vector3()
-    );
-    const intersects = /* raycaster.intersectObjects(colliders, false) */ [];
-    /*let aimingDirection;
-    let aimingPosition;
-    if (intersects.length > 0) {
-      aimingPosition = intersects[0].point;
-      aimingDirection = new THREE.Vector3()
-        .subVectors(aimingPosition, bulletStartPosition)
-        .normalize();
-    } else {
-      aimingPosition = camera.instance
-        .getWorldPosition(new THREE.Vector3())
-        .addScaledVector(
-          camera.instance.getWorldDirection(new THREE.Vector3()),
-          20
-        );
-      aimingDirection = new THREE.Vector3()
-        .subVectors(aimingPosition, bulletStartPosition)
-        .normalize();
-    }
-    _target.aimingPosition = aimingPosition;
-    _target.aimingDirection = aimingDirection;
-
+    const selectedTool = _target.getSelectedTool();
     if (
-      isWeaponChangeTriggered &&
-      wasWeaponChangeTriggered &&
-      now - weaponChangeStartTime > weaponChangeTimeout
-    ) {
-      _target.wasWeaponChangeTriggered = false;
-      _target.isWeaponChangeTriggered = false;
-    }
-    if (
+      selectedTool &&
       isShootingActive &&
       !_target.isShootTriggered &&
       _target.useAim &&
-      selectedWeaponType === WeaponType.RIFLE &&
-      stamina >= shootStaminaCost
+      selectedWeaponType === WeaponType.RIFLE
     ) {
       _target.isShootTriggered = true;
-      stamina = Math.max(0, stamina - shootStaminaCost);
 
-      const shootingEffect = createParticleSystem(
+      /* const shootingEffect = createParticleSystem(
         effectsConfig[EffectId.SHOOTING]
-      );
+      ); 
       projectileStartSocket.add(shootingEffect);
-      setTimeout(() => destroyParticleSystem(shootingEffect), 1000);
+      setTimeout(() => destroyParticleSystem(shootingEffect), 1000);*/
 
-      shoot({
-        bulletStartPosition,
-        aimingDirection,
-        camera: camera,
-        //physicsWorld,
-        scene: scene,
+      _world.getModule(MODULE_ID.PROJECTILES).shoot({
+        startPosition: _target
+          .getSocket(ModelSocketId.PROJECTILE_START)
+          .getWorldPosition(new THREE.Vector3()),
+        direction: selectedTool.getWorldDirection(new THREE.Vector3()),
+        scene: _world.scene,
       });
-    }*/
+    }
   }
 };
