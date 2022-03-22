@@ -335,14 +335,18 @@ export const updateUnitController = ({ now, delta }) => {
       _target.isShootTriggered = false;
     }
 
-    _target.aimingPosition = _world
+    const cameraPosition = _world.camera.instance.getWorldPosition(
+      new THREE.Vector3()
+    );
+    const cameraDirection = _world.camera.instance.getWorldDirection(
+      new THREE.Vector3()
+    );
+    const aimingRayResult = _world
       .getModule(MODULE_ID.OCTREE)
-      .worldOctree.rayIntersect(
-        new THREE.Ray(
-          _world.camera.instance.getWorldPosition(new THREE.Vector3()),
-          _world.camera.instance.getWorldDirection(new THREE.Vector3())
-        )
-      ).position;
+      .worldOctree.rayIntersect(new THREE.Ray(cameraPosition, cameraDirection));
+    _target.aimingPosition =
+      aimingRayResult?.position ||
+      cameraPosition.add(cameraDirection.setLength(15));
 
     const selectedTool = _target.getSelectedTool();
     if (
@@ -353,20 +357,13 @@ export const updateUnitController = ({ now, delta }) => {
       selectedWeaponType === WeaponType.RIFLE
     ) {
       _target.isShootTriggered = true;
-
-      /* const shootingEffect = createParticleSystem(
-        effectsConfig[EffectId.SHOOTING]
-      ); 
-      projectileStartSocket.add(shootingEffect);
-      setTimeout(() => destroyParticleSystem(shootingEffect), 1000);*/
-
-      _world.getModule(MODULE_ID.PROJECTILES).shoot({
-        startPosition: _target
-          .getSocket(ModelSocketId.PROJECTILE_START)
-          .getWorldPosition(new THREE.Vector3()),
-        direction: selectedTool.getWorldDirection(new THREE.Vector3()),
-        scene: _world.scene,
-      });
+      const position = _target
+        .getRegisteredObject("projectileStart")
+        .object.getWorldPosition(new THREE.Vector3());
+      const direction = selectedTool.object.getWorldDirection(
+        new THREE.Vector3()
+      );
+      selectedTool?.on?.activate({ world: _world, position, direction });
     }
   }
 };

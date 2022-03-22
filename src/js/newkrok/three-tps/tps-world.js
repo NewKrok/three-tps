@@ -30,10 +30,9 @@ export const createTPSWorld = ({
         characterConfig,
         camera: camera.instance,
         characterTickRoutine: (character) => {
-          character.updateLookAtPosition({
-            position: character.useAim ? character.aimingPosition : null,
-            rotation: camera.getRotation(),
-          });
+          character.updateAimPosition(
+            character.useAim ? character.aimingPosition : null
+          );
         },
       })
         .then((world) => {
