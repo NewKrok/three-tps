@@ -5,20 +5,21 @@ import {
   updateUnitActions,
 } from "./control/unit-action-manager";
 
-import { MODULE_ID } from "@newkrok/three-game/src/js/newkrok/three-game/modules/modules.js";
+import { WorldModuleId } from "@newkrok/three-game/src/js/newkrok/three-game/modules/module-enums.js";
 import { createTPSCamera } from "./tps-camera";
 import { createWorld } from "@newkrok/three-game/src/js/newkrok/three-game/world.js";
+import { deepMerge } from "@newkrok/three-utils/src/js/newkrok/three-utils/object-utils.js";
 import { updateUnitController } from "./control/unit-controller";
 
 export const createTPSWorld = ({
   target,
   assetsConfig,
   worldConfig,
-  characterConfig,
+  unitConfig,
 }) => {
   let _onUpdate;
 
-  const camera = createTPSCamera();
+  const tpsCamera = createTPSCamera();
   const onLoaded = worldConfig.onLoaded;
 
   const promise = new Promise((resolve, reject) => {
@@ -27,24 +28,19 @@ export const createTPSWorld = ({
         target,
         assetsConfig,
         worldConfig: { ...worldConfig, onLoaded: null },
-        characterConfig,
-        camera: camera.instance,
-        characterTickRoutine: (character) => {
-          character.updateAimPosition(
-            character.useAim ? character.aimingPosition : null
-          );
-        },
+        unitConfig,
+        camera: tpsCamera.instance,
       })
         .then((world) => {
           world.renderer.domElement.onclick =
             world.renderer.domElement.requestPointerLock;
 
-          camera.init({
-            worldOctree: world.getModule(MODULE_ID.OCTREE).worldOctree,
+          tpsCamera.init({
+            worldOctree: world.getModule(WorldModuleId.OCTREE).worldOctree,
           });
 
           const update = (cycleData) => {
-            camera.update();
+            tpsCamera.update();
             updateUnitActions();
             updateUnitController(cycleData);
             _onUpdate && _onUpdate(cycleData);
@@ -54,14 +50,17 @@ export const createTPSWorld = ({
           initUnitActions();
           onUnitAction({
             action: UnitAction.RotateCamera,
-            callback: ({ x, y }) => camera.updateRotation({ x, y }),
+            callback: ({ x, y }) => tpsCamera.updateRotation({ x, y }),
           });
 
-          const tpsWorld = {
-            ...world,
-            camera,
-            onUpdate: (onUpdate) => (_onUpdate = onUpdate),
-          };
+          const tpsWorld = deepMerge(
+            world,
+            {
+              tpsCamera,
+              onUpdate: (onUpdate) => (_onUpdate = onUpdate),
+            },
+            { applyToFirstObject: true }
+          );
           onLoaded && onLoaded(tpsWorld);
           resolve(tpsWorld);
         })

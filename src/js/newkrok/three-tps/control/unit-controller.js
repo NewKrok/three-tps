@@ -5,22 +5,12 @@ import {
   onUnitAction,
   unitActionState,
 } from "./unit-action-manager.js";
-
-import { MODULE_ID } from "@newkrok/three-game/src/js/newkrok/three-game/modules/modules.js";
-import { ModelSocketId } from "@newkrok/three-game/src/js/newkrok/three-game/unit/unit-enums.js";
-
-//import { EffectId, effectsConfig } from "../../effects-config.js";
-
-/* import {
-  createParticleSystem,
-  destroyParticleSystem,
-} from "@newkrok/three-particles/src/js/effects/three-particles"; */
-
-/* import { MODULE_ID } from "../../three-game/world.js";
-import { MathUtils } from "three"; */
+import {
+  UnitModuleId,
+  WorldModuleId,
+} from "@newkrok/three-game/src/js/newkrok/three-game/modules/module-enums.js";
 
 //import { AudioId } from "../../assets-config.js";
-
 //import { playAudio } from "../../game-engine/audio/audio.js";
 
 const WeaponType = {
@@ -45,7 +35,7 @@ let crosshairs = null;
 let isShootingActive = false;
 
 const clearAimState = () => {
-  _world.camera.disableAimZoom();
+  _world.tpsCamera.disableAimZoom();
   _target.useAim = false;
 };
 
@@ -103,8 +93,8 @@ export const setUnitControllerTarget = ({ target, world }) => {
     action: UnitAction.Aim,
     callback: () => {
       const zoom = () => {
-        _target.useAim = !_target.useAim;
-        if (_target.useAim) _world.camera.useAimZoom();
+        _target.userData.useAim = !_target.userData.useAim;
+        if (_target.userData.useAim) _world.tpsCamera.useAimZoom();
         else clearAimState();
         /*playAudio({
             audioId: AudioId.Aim,
@@ -171,10 +161,10 @@ export const updateUnitController = ({ now, delta }) => {
       wasShootTriggered,
       isShootTriggered,
       shootStartTime,
-      useAim,
+      userData: { useAim },
     } = _target;
 
-    const cameraRotation = _world.camera.getRotation().clone();
+    const cameraRotation = _world.tpsCamera.getRotation().clone();
 
     isMovementBlocked = false;
 
@@ -314,7 +304,7 @@ export const updateUnitController = ({ now, delta }) => {
 
     _target.turn = 0;
 
-    if (crosshairs) crosshairs.style.opacity = _target.useAim ? 1 : 0;
+    if (crosshairs) crosshairs.style.opacity = useAim ? 1 : 0;
     else crosshairs = document.querySelector("#crosshairs");
 
     if (
@@ -335,25 +325,12 @@ export const updateUnitController = ({ now, delta }) => {
       _target.isShootTriggered = false;
     }
 
-    const cameraPosition = _world.camera.instance.getWorldPosition(
-      new THREE.Vector3()
-    );
-    const cameraDirection = _world.camera.instance.getWorldDirection(
-      new THREE.Vector3()
-    );
-    const aimingRayResult = _world
-      .getModule(MODULE_ID.OCTREE)
-      .worldOctree.rayIntersect(new THREE.Ray(cameraPosition, cameraDirection));
-    _target.aimingPosition =
-      aimingRayResult?.position ||
-      cameraPosition.add(cameraDirection.setLength(15));
-
     const selectedTool = _target.getSelectedTool();
     if (
       selectedTool &&
       isShootingActive &&
       !_target.isShootTriggered &&
-      _target.useAim &&
+      useAim &&
       selectedWeaponType === WeaponType.RIFLE
     ) {
       _target.isShootTriggered = true;
