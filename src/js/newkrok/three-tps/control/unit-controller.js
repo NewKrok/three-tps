@@ -1,166 +1,21 @@
 import * as THREE from "three";
 
-import {
-  UnitAction,
-  onUnitAction,
-  unitActionState,
-} from "./unit-action-manager.js";
-import {
-  UnitModuleId,
-  WorldModuleId,
-} from "@newkrok/three-game/src/js/newkrok/three-game/modules/module-enums.js";
-
-//import { AudioId } from "../../assets-config.js";
-//import { playAudio } from "../../game-engine/audio/audio.js";
-
-const WeaponType = {
-  Unarmed: 0,
-  Machete: 1,
-  Pistol: 2,
-  RIFLE: 3,
-};
+import { unitActionState } from "./unit-action-manager.js";
 
 let _target = null;
 let _world = null;
 
 let isMovementBlocked = false;
-let selectedWeaponType = WeaponType.Unarmed;
-
-let stamina = 100;
-
-const slashTimeout = 1000;
-const shootTimeout = 200;
-
-let crosshairs = null;
-let isShootingActive = false;
-
-const clearAimState = () => {
-  _world.tpsCamera.disableAimZoom();
-  _target.useAim = false;
-};
 
 export const setUnitControllerTarget = ({ target, world }) => {
   _target = target;
   _world = world;
-
-  onUnitAction({
-    action: UnitAction.Jump,
-    callback: () => {
-      if (_target.onGround) _target.jump();
-    },
-  });
-
-  onUnitAction({
-    action: UnitAction.Attack,
-    callback: () => (isShootingActive = true),
-  });
-
-  onUnitAction({
-    action: UnitAction.AttackFinish,
-    callback: () => (isShootingActive = false),
-  });
-
-  const chooseRifle = () => {
-    if (!_target.isWeaponChangeTriggered) {
-      // setTimeout(() => {
-      if (_target) {
-        if (selectedWeaponType !== WeaponType.RIFLE) {
-          selectedWeaponType = WeaponType.RIFLE;
-          //_target.usePistol();
-
-          /*playAudio({
-              audioId: AudioId.ChangeToPistol,
-              cacheId: AudioId.ChangeToPistol,
-            });*/
-        } else {
-          selectedWeaponType = WeaponType.Unarmed;
-          _target.useUnarmed();
-          clearAimState();
-        }
-      }
-      // }, 500);
-      if (selectedWeaponType === WeaponType.RIFLE) {
-        /*playAudio({
-          audioId: AudioId.ChangeToPistol,
-          cacheId: AudioId.ChangeToPistol,
-        });*/
-      }
-      _target.isWeaponChangeTriggered = true;
-    }
-  };
-
-  onUnitAction({
-    action: UnitAction.Aim,
-    callback: () => {
-      const zoom = () => {
-        _target.userData.useAim = !_target.userData.useAim;
-        if (_target.userData.useAim) _world.tpsCamera.useAimZoom();
-        else clearAimState();
-        /*playAudio({
-            audioId: AudioId.Aim,
-            cacheId: AudioId.Aim,
-          });*/
-      };
-
-      if (selectedWeaponType !== WeaponType.RIFLE) {
-        chooseRifle();
-        zoom();
-      } else zoom();
-    },
-  });
-
-  onUnitAction({
-    action: UnitAction.ChooseWeapon1,
-    callback: () => {
-      if (!_target.isWeaponChangeTriggered && _target.onGround) {
-        setTimeout(() => {
-          if (_target) {
-            if (selectedWeaponType !== WeaponType.Machete) {
-              selectedWeaponType = WeaponType.Machete;
-              _target.useMachete();
-              clearAimState();
-              /*playAudio({
-                audioId: AudioId.ChangeToMachete,
-                cacheId: AudioId.ChangeToMachete,
-              });*/
-            } else {
-              selectedWeaponType = WeaponType.Unarmed;
-              _target.useUnarmed();
-              clearAimState();
-            }
-          }
-        }, 300);
-        if (selectedWeaponType === WeaponType.Machete) {
-          /*playAudio({
-            audioId: AudioId.ChangeToMachete,
-            cacheId: AudioId.ChangeToMachete,
-          });*/
-        }
-        _target.isWeaponChangeTriggered = true;
-      }
-    },
-  });
-
-  onUnitAction({
-    action: UnitAction.ChooseWeapon2,
-    callback: () => {
-      if (!_target.isWeaponChangeTriggered && _target.onGround) {
-        chooseRifle();
-      }
-    },
-  });
 };
 
 export const updateUnitController = ({ now, delta }) => {
   if (_target) {
     const {
       viewRotation,
-      wasSlashTriggered,
-      isSlashTriggered,
-      slashStartTime,
-      wasShootTriggered,
-      isShootTriggered,
-      shootStartTime,
       userData: { useAim },
     } = _target;
 
@@ -181,9 +36,7 @@ export const updateUnitController = ({ now, delta }) => {
       : _target.config.speedInAir;
 
     const velocity =
-      (stamina > 0 && unitActionState.run.pressed
-        ? baseSpeed * 2.5
-        : baseSpeed) *
+      (unitActionState.run.pressed ? baseSpeed * 2.5 : baseSpeed) *
       Math.max(
         unitActionState.forward.value,
         unitActionState.backward.value,
@@ -221,17 +74,11 @@ export const updateUnitController = ({ now, delta }) => {
       }
       _target.setRotation(_target.viewRotation + diff * (delta / 0.1));
 
-      /*physics.quaternion.setFromAxisAngle(
-        new CANNON.Vec3(0, 1, 0),
-        -_target.viewRotation
-      );*/
-
       let normalizedDiff = Math.abs(diff);
       normalizedDiff -= normalizedDiff > Math.PI ? Math.PI : 0;
 
       velocityMultiplier =
         normalizedDiff > 0.9 ? 0 : (Math.PI - normalizedDiff) / Math.PI;
-      if (selectedWeaponType != WeaponType.Unarmed) velocityMultiplier *= 0.9;
 
       let noramalizedTargetRotation = Math.PI * 2 - targetRotation;
       let relativeVector;
@@ -303,44 +150,5 @@ export const updateUnitController = ({ now, delta }) => {
     }
 
     _target.turn = 0;
-
-    if (crosshairs) crosshairs.style.opacity = useAim ? 1 : 0;
-    else crosshairs = document.querySelector("#crosshairs");
-
-    if (
-      isSlashTriggered &&
-      wasSlashTriggered &&
-      now - slashStartTime > slashTimeout
-    ) {
-      _target.wasSlashTriggered = false;
-      _target.isSlashTriggered = false;
-    }
-
-    if (
-      isShootTriggered &&
-      wasShootTriggered &&
-      now - shootStartTime > shootTimeout
-    ) {
-      _target.wasShootTriggered = false;
-      _target.isShootTriggered = false;
-    }
-
-    const selectedTool = _target.getSelectedTool();
-    if (
-      selectedTool &&
-      isShootingActive &&
-      !_target.isShootTriggered &&
-      useAim &&
-      selectedWeaponType === WeaponType.RIFLE
-    ) {
-      _target.isShootTriggered = true;
-      const position = _target
-        .getRegisteredObject("projectileStart")
-        .object.getWorldPosition(new THREE.Vector3());
-      const direction = selectedTool.object.getWorldDirection(
-        new THREE.Vector3()
-      );
-      selectedTool?.on?.activate({ world: _world, position, direction });
-    }
   }
 };

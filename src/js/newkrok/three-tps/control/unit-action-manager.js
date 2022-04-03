@@ -13,11 +13,6 @@ export const UnitAction = {
   Left: "Left",
   Right: "Right",
   Run: "Run",
-  Jump: "Jump",
-  Attack: "Attack",
-  AttackFinish: "AttackFinish",
-  Crouch: "Crouch",
-  Aim: "Aim",
   RotateCamera: "RotateCamera",
   Interaction: "Interaction",
   Pause: "Pause",
@@ -38,11 +33,6 @@ export const unitActionState = {
   left: { pressed: false, value: 0 },
   right: { pressed: false, value: 0 },
   run: { pressed: false, value: 0 },
-  jump: { pressed: false, value: 0 },
-  attack: { pressed: false, value: 0 },
-  attackFinish: { pressed: false, value: 0 },
-  crouch: { pressed: false, value: 0 },
-  aim: { pressed: false, value: 0 },
   interaction: { pressed: false, value: 0 },
   pause: { pressed: false, value: 0 },
   ...Array.from({ length: 10 }).reduce(
@@ -164,39 +154,6 @@ const updateRunState = () => {
   });
 };
 
-const updateJumpState = () => {
-  unitActionState.jump = calculateState({
-    prevState: unitActionState.jump,
-    keys: [keys.space],
-    gamepadButton: ButtonKey.ActionBottom,
-    action: UnitAction.Jump,
-  });
-};
-
-const updateAttackState = () => {
-  unitActionState.attack = calculateState({
-    prevState: unitActionState.attack,
-    keys: [],
-    gamepadButton: ButtonKey.ActionLeft,
-    action: UnitAction.Attack,
-  });
-  unitActionState.attackFinish = calculateState({
-    prevState: unitActionState.attackFinish,
-    keys: [],
-    gamepadButton: ButtonKey.AttackFinish,
-    action: UnitAction.AttackFinish,
-  });
-};
-
-const updateAimState = () => {
-  unitActionState.aim = calculateState({
-    prevState: unitActionState.aim,
-    keys: [],
-    gamepadButton: ButtonKey.RightTrigger,
-    action: UnitAction.Aim,
-  });
-};
-
 const updateChooseToolState = () => {
   for (let i = 0; i < 10; i++) {
     unitActionState[`chooseTool${i}`] = calculateState({
@@ -206,15 +163,6 @@ const updateChooseToolState = () => {
       action: UnitAction[`CHOOSE_TOOL_${i}`],
     });
   }
-};
-
-const updateCrouchState = () => {
-  unitActionState.crouch = calculateState({
-    prevState: unitActionState.crouch,
-    keys: [keys.control],
-    gamepadButton: ButtonKey.RightAxisButton,
-    action: UnitAction.Crouch,
-  });
 };
 
 const updateInteractionState = () => {
@@ -243,10 +191,6 @@ export const updateUnitActions = () => {
   updateLeftState();
   updateRightState();
   updateRunState();
-  updateJumpState();
-  updateAttackState();
-  updateCrouchState();
-  updateAimState();
   updateChooseToolState();
   updateInteractionState();
   updatePauseState();
@@ -289,37 +233,6 @@ export const initUnitActions = () => {
       action: UnitAction.RotateCamera,
       value: { x: movementX / 350, y: movementY / 350 },
     });
-  });
-  document.addEventListener("mousedown", (e) => {
-    switch (e.button) {
-      case 0:
-        trigger({
-          action: UnitAction.Attack,
-          value: 1,
-        });
-        break;
-
-      case 2:
-        trigger({
-          action: UnitAction.Aim,
-          value: 1,
-        });
-        break;
-
-      default:
-    }
-  });
-  document.addEventListener("mouseup", (e) => {
-    switch (e.button) {
-      case 0:
-        trigger({
-          action: UnitAction.AttackFinish,
-          value: 1,
-        });
-        break;
-
-      default:
-    }
   });
 };
 
