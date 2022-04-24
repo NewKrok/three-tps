@@ -1,3 +1,5 @@
+import * as THREE from "three";
+
 import {
   UnitActionId,
   unitControllerConfig,
@@ -8,7 +10,6 @@ import { Mouse } from "@newkrok/three-game/src/js/newkrok/three-game/control/mou
 import { TPSUnitModuleId } from "@newkrok/three-tps/src/js/newkrok/three-tps/modules/tps-module-enums.js";
 
 export const TPSUnitActionId = {
-  ...UnitActionId,
   CAMERA: "CAMERA",
   AIM: "AIM",
 };
@@ -17,7 +18,7 @@ export const tpsUnitControllerConfig = {
   actionConfig: [
     ...unitControllerConfig.actionConfig,
     {
-      actionId: UnitActionId.CAMERA,
+      actionId: TPSUnitActionId.CAMERA,
       customTrigger: (trigger) => {
         document.addEventListener("mousemove", ({ movementX, movementY }) => {
           trigger({ x: movementX / 350, y: movementY / 350 });
@@ -26,7 +27,7 @@ export const tpsUnitControllerConfig = {
       gamepadButtons: [ButtonKey.LeftAxisX, ButtonKey.LeftAxisY],
     },
     {
-      actionId: UnitActionId.AIM,
+      actionId: TPSUnitActionId.AIM,
       mouse: [Mouse.RIGHT_BUTTON],
       gamepadButtons: [ButtonKey.LeftTrigger],
     },
@@ -63,19 +64,23 @@ export const tpsUnitControllerConfig = {
       },
     },
     {
-      actionId: UnitActionId.CAMERA,
+      actionId: TPSUnitActionId.CAMERA,
       callback: ({ world, value: { x, y } }) => {
         world.tpsCamera.updateRotation({ x, y });
       },
     },
     {
-      actionId: UnitActionId.AIM,
+      actionId: TPSUnitActionId.AIM,
       callback: ({ unit, world }) => {
         unit.userData.useAim = !unit.userData.useAim;
-        if (unit.userData.useAim) world.tpsCamera.useAimZoom();
-        else {
-          world.tpsCamera.disableAimZoom();
-          unit.userData.useAim = false;
+        if (unit.userData.useAim) {
+          world.tpsCamera.setMaxDistance(1);
+          world.tpsCamera.setPositionOffset(new THREE.Vector3(0.5, 1.5, 0));
+          world.tpsCamera.setYBoundaries({ min: 1, max: 2.6 });
+        } else {
+          world.tpsCamera.setMaxDistance(3);
+          world.tpsCamera.setPositionOffset(new THREE.Vector3(0, 1.6, 0));
+          world.tpsCamera.setYBoundaries({ max: 2.7 });
         }
       },
     },

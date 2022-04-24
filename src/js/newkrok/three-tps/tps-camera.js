@@ -2,7 +2,23 @@ import * as THREE from "three";
 
 import { Sphere } from "three";
 
-export const createTPSCamera = () => {
+export const createTPSCamera = (config) => {
+  let target, q;
+  let maxDistance, maxDistanceByCollision, currentDistance, maxCameraOffset;
+  let _worldOctree;
+
+  let cameraSphere = new Sphere(
+    new THREE.Vector3(),
+    config.cameraCollisionRadius
+  );
+
+  maxDistance = maxDistanceByCollision = currentDistance = config.maxDistance;
+
+  const requestedPositionOffset = new THREE.Vector3(
+    config.positionOffset.x,
+    config.positionOffset.y,
+    config.positionOffset.z
+  );
   const camera = new THREE.PerspectiveCamera(
     70,
     window.innerWidth / window.innerHeight,
@@ -10,58 +26,52 @@ export const createTPSCamera = () => {
     1000
   );
   const rotation = new THREE.Vector3();
+  const realTargetPosition = new THREE.Object3D();
+  const rotatedPositionOffset = new THREE.Vector3(0, 0, 0);
+  const targetAndOffsetNormalizedVector = new THREE.Vector3(0, 0, 0);
+  const offsetAndCameraNormalizedVector = new THREE.Vector3(0, 0, 0);
 
-  let _worldOctree;
-  let cameraSphere = new Sphere(new THREE.Vector3(), 0.2);
-
-  let target, q, distance, maxDistance, currentDistance;
-  let minY = 1.2;
-  let maxY = 2.7;
-  let isAimZoomEnabled = false;
-  let positionOffsetTarget = new THREE.Vector3(0, 0, 0);
-  let positionOffset = new THREE.Vector3(0, 0, 0);
-  let normalizedPositionOffset = new THREE.Vector3(0, 0, 0);
-
-  const calculateOffset = () => {
-    const normalizedDistance = Math.min(currentDistance, maxDistance);
+  const calculateOffset = (pos) => {
+    const normalizedDistance = Math.min(
+      currentDistance,
+      maxDistanceByCollision
+    );
     const idealOffset = new THREE.Vector3(
       0,
-      1 + -normalizedDistance * Math.cos(rotation.y),
+      -normalizedDistance * Math.cos(rotation.y),
       -normalizedDistance * Math.sin(rotation.y)
     );
-    const pos = target.position.clone();
-    pos.add(normalizedPositionOffset);
     idealOffset.applyQuaternion(q);
     idealOffset.add(pos);
+
     return idealOffset;
   };
 
-  const calculateLookat = () => {
-    const idealLookat = new THREE.Vector3(0, 1, 0);
-    const pos = target.position.clone();
-    pos.add(normalizedPositionOffset);
-    idealLookat.add(pos);
-    return idealLookat;
-  };
-
   const normalizePositionOffset = () => {
-    normalizedPositionOffset.set(
-      positionOffset.x + positionOffset.z * Math.cos(rotation.x),
-      positionOffset.y,
-      positionOffset.z * Math.sin(rotation.x)
+    const reversedRotation = Math.PI - rotation.x + target.rotation.x;
+    const rotatedRotation = reversedRotation + Math.PI / 2;
+    rotatedPositionOffset.set(
+      requestedPositionOffset.x * Math.sin(rotatedRotation) +
+        requestedPositionOffset.z * Math.sin(reversedRotation),
+      0,
+      requestedPositionOffset.z * Math.cos(reversedRotation) +
+        requestedPositionOffset.x * Math.cos(rotatedRotation)
     );
+    targetAndOffsetNormalizedVector
+      .copy(rotatedPositionOffset)
+      .setLength(config.cameraCollisionRadius);
+    maxCameraOffset = rotatedPositionOffset.length();
   };
 
   const setYBoundaries = ({ min, max }) => {
-    minY = min || minY;
-    maxY = max || maxY;
-    rotation.y = Math.max(minY, rotation.y);
-    rotation.y = Math.min(maxY, rotation.y);
+    config.yBoundaries.min = min || config.yBoundaries.min;
+    config.yBoundaries.max = max || config.yBoundaries.max;
+    rotation.y = Math.max(config.yBoundaries.min, rotation.y);
+    rotation.y = Math.min(config.yBoundaries.max, rotation.y);
   };
 
-  const setPositionOffset = (value, useLerp = true) => {
-    if (useLerp) positionOffsetTarget.copy(value);
-    else positionOffset = value;
+  const setPositionOffset = (value) => {
+    requestedPositionOffset.copy(value);
     normalizePositionOffset();
   };
 
@@ -71,71 +81,109 @@ export const createTPSCamera = () => {
     setTarget: (object) => {
       target = object;
       q = target.quaternion.clone();
-      rotation.x = -new THREE.Euler().setFromQuaternion(q).y;
-      rotation.y = 2.4;
-      distance = 15;
-      currentDistance = distance;
-      maxDistance = 99;
-      normalizePositionOffset();
+      rotation.x =
+        -new THREE.Euler().setFromQuaternion(q).y + config.initialRotation.x;
+      rotation.y = config.initialRotation.y;
     },
-    update: () => {
+    setMaxDistance: (value) => (maxDistance = value),
+    setYBoundaries,
+    setPositionOffset,
+    update: ({ isPaused, delta }) => {
+      if (config.stopDuringPause && isPaused) return;
+
       if (target) {
         const targetPos = target.position.clone();
 
         if (targetPos) {
-          if (
-            Math.abs(positionOffset.distanceTo(positionOffsetTarget)) > 0.01
-          ) {
-            positionOffset.lerp(positionOffsetTarget, 0.1);
-            normalizePositionOffset();
-          }
-
-          const cameraCollisionStep = 0.1;
-          targetPos.y += 1;
+          const cameraCollisionStep = config.cameraCollisionRadius;
+          targetPos.y += requestedPositionOffset.y;
 
           /**
            * Check collision between target and requested offset to calculate the max possible offset
            * */
-          let vector = normalizedPositionOffset
-            .clone()
-            .setLength(cameraCollisionStep);
-          let maxDistance = normalizedPositionOffset.length();
-          let distance = 0;
+          let hasCollision = false;
+          let targetAndOffsetDistance = 0;
           cameraSphere.center.copy(targetPos);
+          let sphereCollision = _worldOctree.sphereIntersect(cameraSphere);
+          let isFirstCheckCollide = sphereCollision;
           while (
-            distance < maxDistance &&
-            !_worldOctree.sphereIntersect(cameraSphere)
+            targetAndOffsetDistance < maxCameraOffset &&
+            !sphereCollision
           ) {
-            distance += cameraCollisionStep;
-            cameraSphere.center.add(vector);
+            targetAndOffsetDistance += cameraCollisionStep;
+            if (isFirstCheckCollide) {
+              cameraSphere.center.sub(targetAndOffsetNormalizedVector);
+            } else {
+              cameraSphere.center.add(targetAndOffsetNormalizedVector);
+            }
+
+            sphereCollision = _worldOctree.sphereIntersect(cameraSphere);
+            hasCollision = hasCollision || sphereCollision;
           }
-          cameraSphere.center.sub(vector);
+          if (sphereCollision) {
+            cameraSphere.center.add(
+              sphereCollision.normal.multiplyScalar(sphereCollision.depth)
+            );
+            targetAndOffsetDistance = targetPos.distanceTo(cameraSphere.center);
+          }
+          realTargetPosition.position.lerp(
+            cameraSphere.center,
+            delta *
+              (hasCollision
+                ? config.lerp.position.collision
+                : config.lerp.position.normal)
+          );
+          cameraSphere.center.copy(realTargetPosition.position);
 
           /**
            * Check collision between offset target position and requested camera position
            * to calculate the max camera distance
            * */
-          vector = new THREE.Vector3(0, 0, 1);
-          vector.applyQuaternion(camera.quaternion);
-          vector.setLength(cameraCollisionStep);
-          maxDistance = isAimZoomEnabled ? 2 : 3;
-          distance = cameraCollisionStep;
-          while (
-            distance < maxDistance &&
-            !_worldOctree.sphereIntersect(cameraSphere)
-          ) {
-            distance += cameraCollisionStep;
-            cameraSphere.center.add(vector);
+          realTargetPosition.lookAt(
+            calculateOffset(cameraSphere.center.clone())
+          );
+          offsetAndCameraNormalizedVector.set(0, 0, 1);
+          offsetAndCameraNormalizedVector.applyQuaternion(
+            realTargetPosition.quaternion
+          );
+          offsetAndCameraNormalizedVector.setLength(cameraCollisionStep);
+          let offsetAndCameraDistance = cameraCollisionStep;
+          sphereCollision = false;
+          while (offsetAndCameraDistance < maxDistance && !sphereCollision) {
+            offsetAndCameraDistance += cameraCollisionStep;
+            cameraSphere.center.add(offsetAndCameraNormalizedVector);
+            sphereCollision = _worldOctree.sphereIntersect(cameraSphere);
+            hasCollision = hasCollision || sphereCollision;
+          }
+          if (sphereCollision) {
+            cameraSphere.center.add(
+              sphereCollision.normal.multiplyScalar(sphereCollision.depth)
+            );
+            offsetAndCameraDistance = realTargetPosition.position.distanceTo(
+              cameraSphere.center
+            );
           }
 
-          distance -= cameraCollisionStep;
           currentDistance = THREE.Math.lerp(
             currentDistance,
-            distance,
-            distance < currentDistance ? 0.3 : 0.05
+            offsetAndCameraDistance,
+            delta *
+              (hasCollision
+                ? config.lerp.distance.collision
+                : config.lerp.distance.normal)
           );
-          camera.position.copy(calculateOffset());
-          camera.lookAt(calculateLookat());
+
+          maxDistanceByCollision = Math.max(
+            hasCollision ? offsetAndCameraDistance : currentDistance,
+            maxDistance
+          );
+
+          offsetAndCameraNormalizedVector.setLength(currentDistance);
+          cameraSphere.center
+            .copy(realTargetPosition.position)
+            .add(offsetAndCameraNormalizedVector);
+          camera.position.copy(cameraSphere.center);
+          camera.lookAt(realTargetPosition.position);
         }
       }
     },
@@ -144,24 +192,13 @@ export const createTPSCamera = () => {
       if (target) {
         rotation.x += x || 0;
         rotation.y += y || 0;
-        rotation.y = Math.max(minY, rotation.y);
-        rotation.y = Math.min(maxY, rotation.y);
+        rotation.y = Math.max(config.yBoundaries.min, rotation.y);
+        rotation.y = Math.min(config.yBoundaries.max, rotation.y);
         if (x) {
           q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -rotation.x);
         }
         normalizePositionOffset();
       }
-    },
-    useAimZoom: () => {
-      isAimZoomEnabled = true;
-      setPositionOffset(new THREE.Vector3(0, 0.6, -0.8));
-      setYBoundaries({ min: 1, max: 2.6 });
-    },
-
-    disableAimZoom: () => {
-      isAimZoomEnabled = false;
-      setPositionOffset(new THREE.Vector3(0, 0, 0));
-      setYBoundaries({ max: 2.7 });
     },
   };
 };

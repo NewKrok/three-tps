@@ -13,7 +13,9 @@ const create = ({ world, unit }) => {
     setBackwardValue: (value) => (backward = value),
     setLeftValue: (value) => (left = value),
     setRightValue: (value) => (right = value),
-    update: ({ delta }) => {
+    update: ({ isPaused, delta }) => {
+      if (isPaused) return;
+
       const cameraRotation = world.tpsCamera.getRotation();
 
       const verticalVelocity =
