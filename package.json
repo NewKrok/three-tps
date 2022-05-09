@@ -1,6 +1,6 @@
 {
   "name": "@newkrok/three-tps",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "TPS extension for THREE Game",
   "exports": {
     "./src/*": "./src/*"
@@ -23,7 +23,7 @@
   },
   "homepage": "https://github.com/NewKrok/three-tps#readme",
   "dependencies": {
-    "@newkrok/three-game": "0.4.1"
+    "@newkrok/three-game": "0.5.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
