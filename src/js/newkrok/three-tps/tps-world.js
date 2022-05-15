@@ -32,12 +32,7 @@ const TPS_WORLD_CONFIG = {
   },
 };
 
-export const createTPSWorld = ({
-  target,
-  assetsConfig,
-  worldConfig,
-  unitConfig,
-}) => {
+export const createTPSWorld = ({ target, worldConfig, unitConfig }) => {
   let _onUpdate;
 
   const tpsCamera = createTPSCamera(worldConfig.tpsCamera);
@@ -47,7 +42,6 @@ export const createTPSWorld = ({
     try {
       createWorld({
         target,
-        assetsConfig,
         worldConfig: { ...worldConfig, onLoaded: null },
         unitConfig,
         camera: tpsCamera.instance,

@@ -75,6 +75,14 @@ export const createTPSCamera = (config) => {
     normalizePositionOffset();
   };
 
+  const normalizeRotation = (x) => {
+    rotation.y = Math.max(config.yBoundaries.min, rotation.y);
+    rotation.y = Math.min(config.yBoundaries.max, rotation.y);
+    if (x !== null) q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -rotation.x);
+
+    normalizePositionOffset();
+  };
+
   return {
     instance: camera,
     init: ({ worldOctree }) => (_worldOctree = worldOctree),
@@ -188,16 +196,18 @@ export const createTPSCamera = (config) => {
       }
     },
     getRotation: () => rotation,
-    updateRotation: ({ x, y }) => {
+    rotate: ({ x, y }) => {
       if (target) {
-        rotation.x += x || 0;
-        rotation.y += y || 0;
-        rotation.y = Math.max(config.yBoundaries.min, rotation.y);
-        rotation.y = Math.min(config.yBoundaries.max, rotation.y);
-        if (x) {
-          q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -rotation.x);
-        }
-        normalizePositionOffset();
+        rotation.x += x ?? 0;
+        rotation.y += y ?? 0;
+        normalizeRotation(x);
+      }
+    },
+    setRotation: ({ x, y }) => {
+      if (target) {
+        rotation.x = x ?? 0;
+        rotation.y = y ?? 0;
+        normalizeRotation(x);
       }
     },
   };

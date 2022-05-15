@@ -7,14 +7,17 @@ const create = ({ world, unit }) => {
   let backward = 0;
   let left = 0;
   let right = 0;
+  let isControlPaused = false;
 
   return {
     setForwardValue: (value) => (forward = value),
     setBackwardValue: (value) => (backward = value),
     setLeftValue: (value) => (left = value),
     setRightValue: (value) => (right = value),
+    pause: () => (isControlPaused = true),
+    resume: () => (isControlPaused = false),
     update: ({ isPaused, delta }) => {
-      if (isPaused) return;
+      if (isPaused || isControlPaused) return;
 
       const cameraRotation = world.tpsCamera.getRotation();
 

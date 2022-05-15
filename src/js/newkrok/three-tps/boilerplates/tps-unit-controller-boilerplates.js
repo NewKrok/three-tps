@@ -6,7 +6,7 @@ import {
 } from "@newkrok/three-game/src/js/newkrok/three-game/boilerplates/unit-controller-boilerplates.js";
 
 import { ButtonKey } from "@newkrok/three-game/src/js/newkrok/three-game/control/gamepad.js";
-import { Mouse } from "@newkrok/three-game/src/js/newkrok/three-game/control/mouse.js";
+import { Mouse } from "@newkrok/three-game/src/js/newkrok/three-game/control/mouse-manager.js";
 import { TPSUnitModuleId } from "@newkrok/three-tps/src/js/newkrok/three-tps/modules/tps-module-enums.js";
 
 export const TPSUnitActionId = {
@@ -66,7 +66,7 @@ export const tpsUnitControllerConfig = {
     {
       actionId: TPSUnitActionId.CAMERA,
       callback: ({ world, value: { x, y } }) => {
-        world.tpsCamera.updateRotation({ x, y });
+        world.tpsCamera.rotate({ x, y });
       },
     },
     {
