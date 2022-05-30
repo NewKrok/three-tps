@@ -28,13 +28,12 @@ const TPS_WORLD_CONFIG = {
         collision: 60,
         normal: 4,
       },
+      targetRotation: 6,
     },
   },
 };
 
-export const createTPSWorld = ({ target, worldConfig, unitConfig }) => {
-  let _onUpdate;
-
+export const createTPSWorld = ({ target, worldConfig }) => {
   const tpsCamera = createTPSCamera(worldConfig.tpsCamera);
   const onLoaded = worldConfig.onLoaded;
 
@@ -43,7 +42,6 @@ export const createTPSWorld = ({ target, worldConfig, unitConfig }) => {
       createWorld({
         target,
         worldConfig: { ...worldConfig, onLoaded: null },
-        unitConfig,
         camera: tpsCamera.instance,
       })
         .then((world) => {
@@ -51,17 +49,14 @@ export const createTPSWorld = ({ target, worldConfig, unitConfig }) => {
             worldOctree: world.getModule(WorldModuleId.OCTREE).worldOctree,
           });
 
-          const update = (cycleData) => {
+          world.on.update((cycleData) => {
             tpsCamera.update(cycleData);
-            _onUpdate && _onUpdate(cycleData);
-          };
-          world.onUpdate(update);
+          });
 
           const tpsWorld = deepMerge(
             world,
             {
               tpsCamera,
-              onUpdate: (onUpdate) => (_onUpdate = onUpdate),
             },
             { applyToFirstObject: true }
           );

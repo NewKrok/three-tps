@@ -6,6 +6,8 @@ export const createTPSCamera = (config) => {
   let target, q;
   let maxDistance, maxDistanceByCollision, currentDistance, maxCameraOffset;
   let _worldOctree;
+  let useTargetRotation = false;
+  let targetRotation = 0;
 
   let cameraSphere = new Sphere(
     new THREE.Vector3(),
@@ -26,6 +28,7 @@ export const createTPSCamera = (config) => {
     1000
   );
   const rotation = new THREE.Vector3();
+  const rotationEuler = new THREE.Euler();
   const realTargetPosition = new THREE.Object3D();
   const rotatedPositionOffset = new THREE.Vector3(0, 0, 0);
   const targetAndOffsetNormalizedVector = new THREE.Vector3(0, 0, 0);
@@ -89,8 +92,8 @@ export const createTPSCamera = (config) => {
     setTarget: (object) => {
       target = object;
       q = target.quaternion.clone();
-      rotation.x =
-        -new THREE.Euler().setFromQuaternion(q).y + config.initialRotation.x;
+      rotation.x = targetRotation =
+        -rotationEuler.setFromQuaternion(q).y + config.initialRotation.x;
       rotation.y = config.initialRotation.y;
     },
     setMaxDistance: (value) => (maxDistance = value),
@@ -100,6 +103,12 @@ export const createTPSCamera = (config) => {
       if (config.stopDuringPause && isPaused) return;
 
       if (target) {
+        if (useTargetRotation) {
+          q.slerp(target.quaternion, config.lerp.targetRotation * delta);
+          rotation.x = -rotationEuler.setFromQuaternion(q).y;
+          normalizeRotation(null);
+        }
+
         const targetPos = target.position.clone();
 
         if (targetPos) {
@@ -198,17 +207,19 @@ export const createTPSCamera = (config) => {
     getRotation: () => rotation,
     rotate: ({ x, y }) => {
       if (target) {
-        rotation.x += x ?? 0;
+        if (!useTargetRotation) rotation.x += x ?? 0;
         rotation.y += y ?? 0;
         normalizeRotation(x);
       }
     },
     setRotation: ({ x, y }) => {
       if (target) {
-        rotation.x = x ?? 0;
+        if (!useTargetRotation) rotation.x = x ?? 0;
         rotation.y = y ?? 0;
         normalizeRotation(x);
       }
     },
+    getUseTargetRotation: () => useTargetRotation,
+    setUseTargetRotation: (value) => (useTargetRotation = value),
   };
 };
