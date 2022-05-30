@@ -181,7 +181,7 @@ export const createTPSCamera = (config) => {
             );
           }
 
-          currentDistance = THREE.Math.lerp(
+          currentDistance = THREE.MathUtils.lerp(
             currentDistance,
             offsetAndCameraDistance,
             delta *
