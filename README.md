@@ -1,6 +1,6 @@
 # THREE TPS
 
-Visit my related demo project to check how does it work. https://github.com/NewKrok/three-tps-demo
+This repo and the related npm package - @newkrok/three-tps - is deprecated. From now this TPS related code is part of the @newkrok/three-game package.
 
-# Install
-**npm install @newkrok/three-tps --save**
+https://github.com/NewKrok/three-game
+https://www.npmjs.com/package/@newkrok/three-game
